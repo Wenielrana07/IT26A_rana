@@ -1,0 +1,27 @@
+<?php
+session_start();
+include 'connect.php';
+
+if (!isset($_SESSION['username'])) {
+    header("Location: login.php");
+    exit;
+}
+
+// Get watch ID from URL
+if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+    header("Location: dashboard.php");
+    exit;
+}
+
+$id = (int)$_GET['id'];
+
+// Delete the watch
+$sql = "DELETE FROM watches WHERE id = $id";
+$result = mysqli_query($conn, $sql);
+
+if ($result) {
+    header("Location: dashboard.php");
+    exit;
+} else {
+    die("Error deleting watch: " . mysqli_error($conn));
+}
