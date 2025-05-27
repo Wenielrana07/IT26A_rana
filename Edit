@@ -1,0 +1,128 @@
+<?php
+session_start();
+include 'connect.php';
+
+if (!isset($_SESSION['username'])) {
+    header("Location: login.php");
+    exit;
+}
+
+// Get the watch ID from URL
+if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+    header("Location: dashboard.php");
+    exit;
+}
+
+$id = (int)$_GET['id'];
+
+// Fetch current watch data
+$sql = "SELECT * FROM watches WHERE id = $id";
+$result = mysqli_query($conn, $sql);
+
+if (!$result || mysqli_num_rows($result) == 0) {
+    header("Location: dashboard.php");
+    exit;
+}
+
+$watch = mysqli_fetch_assoc($result);
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $name = mysqli_real_escape_string($conn, $_POST['name']);
+    $brand = mysqli_real_escape_string($conn, $_POST['brand']);
+    $price = $_POST['price'];
+    $description = mysqli_real_escape_string($conn, $_POST['description']);
+
+    if (empty($name) || empty($brand) || empty($price)) {
+        $error = "All fields except description are required.";
+    } else {
+        $update_sql = "UPDATE watches SET name='$name', brand='$brand', price=$price, description='$description' WHERE id=$id";
+        $update_result = mysqli_query($conn, $update_sql);
+
+        if ($update_result) {
+            header("Location: dashboard.php");
+            exit;
+        } else {
+            $error = "Error updating watch: " . mysqli_error($conn);
+        }
+    }
+}
+?>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Edit Watch - TechFix Hub</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet" />
+<style>
+  body {
+    background: #f8f9fa;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  .form-container {
+    background: #fff;
+    padding: 30px 40px;
+    border: 2px solid #2575fc;
+    border-radius: 12px;
+    box-shadow: 0 8px 20px rgba(37, 117, 252, 0.2);
+    max-width: 480px;
+    width: 100%;
+  }
+  h2 {
+    color: #2575fc;
+    font-weight: 700;
+    margin-bottom: 25px;
+    text-align: center;
+  }
+  .btn-primary {
+    background-color: #2575fc;
+    border: none;
+    transition: background-color 0.3s ease;
+  }
+  .btn-primary:hover {
+    background-color: #1458c6;
+  }
+  .btn-secondary {
+    margin-left: 10px;
+  }
+</style>
+</head>
+<body>
+  <div class="form-container">
+    <h2>Edit Watch</h2>
+
+    <?php if (isset($error)): ?>
+      <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+    <?php endif; ?>
+
+    <form method="post" action="edit_watch.php?id=<?= $id ?>" novalidate>
+      <div class="mb-3">
+        <label for="name" class="form-label">Watch Name</label>
+        <input type="text" class="form-control" id="name" name="name" value="<?= htmlspecialchars($watch['name']) ?>" required />
+      </div>
+
+      <div class="mb-3">
+        <label for="brand" class="form-label">Brand</label>
+        <input type="text" class="form-control" id="brand" name="brand" value="<?= htmlspecialchars($watch['brand']) ?>" required />
+      </div>
+
+      <div class="mb-3">
+        <label for="price" class="form-label">Price ($)</label>
+        <input type="number" step="0.01" class="form-control" id="price" name="price" value="<?= htmlspecialchars($watch['price']) ?>" required />
+      </div>
+
+      <div class="mb-3">
+        <label for="description" class="form-label">Description (optional)</label>
+        <textarea class="form-control" id="description" name="description" rows="3"><?= htmlspecialchars($watch['description']) ?></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary">Update Watch</button>
+      <a href="dashboard.php" class="btn btn-secondary">Back to Dashboard</a>
+    </form>
+  </div>
+</body>
+</html>
